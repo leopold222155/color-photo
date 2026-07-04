@@ -1,0 +1,1396 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>color photo — personnalise tes photos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Space+Grotesk:wght@400;500;600;700&family=Fredoka:wght@500;600;700&family=Pacifico&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #14101F;
+    --surface: #1F1830;
+    --surface-2: #291F42;
+    --pink: #FF2E93;
+    --purple: #7B2FF7;
+    --cyan: #00E5FF;
+    --yellow: #FFE93A;
+    --white: #FFFFFF;
+    --muted: #B9AECF;
+    --radius: 18px;
+  }
+
+  *{ box-sizing: border-box; }
+
+  body{
+    margin:0;
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 10% 8%, rgba(123,47,247,0.35), transparent 40%),
+      radial-gradient(circle at 92% 15%, rgba(0,229,255,0.20), transparent 35%),
+      radial-gradient(circle at 50% 100%, rgba(255,46,147,0.20), transparent 45%);
+    color: var(--white);
+    font-family: 'Space Grotesk', sans-serif;
+    min-height: 100vh;
+  }
+
+  ::selection{ background: var(--pink); color: white; }
+
+  /* ---------- Header ---------- */
+  header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 20px;
+    padding: 22px clamp(16px, 4vw, 48px) 8px;
+    flex-wrap: wrap;
+  }
+
+  .logo{
+    font-family:'Bungee', sans-serif;
+    font-size: clamp(24px, 3.4vw, 36px);
+    letter-spacing: 1px;
+    display:flex;
+    line-height: 1;
+  }
+  .logo span{ display:inline-block; transform: rotate(var(--r,0deg)); }
+  .logo .c1{ color: var(--pink); transform: rotate(-4deg); }
+  .logo .c2{ color: var(--cyan); transform: rotate(3deg); }
+  .logo .c3{ color: var(--yellow); transform: rotate(-2deg); }
+  .logo .c4{ color: var(--white); transform: rotate(2deg); }
+  .logo .sp{ width:.32em; }
+
+  .tagline{
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  .brand-block{ display:flex; flex-direction:column; }
+
+  .head-actions{ display:flex; gap:10px; flex-wrap:wrap; }
+
+  button{ font-family:'Space Grotesk', sans-serif; cursor:pointer; border:none; }
+
+  .btn{
+    padding: 11px 18px;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 14px;
+    transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
+  }
+  .btn:active{ transform: scale(0.95); }
+
+  .btn-ghost{
+    background: var(--surface);
+    color: var(--white);
+    border: 1px solid rgba(255,255,255,0.12);
+  }
+  .btn-ghost:hover{ background: var(--surface-2); }
+
+  .btn-primary{
+    background: linear-gradient(120deg, var(--pink), var(--purple));
+    color: white;
+    box-shadow: 0 6px 18px rgba(255,46,147,0.35);
+  }
+  .btn-primary:hover{ filter: brightness(1.08); box-shadow: 0 8px 22px rgba(255,46,147,0.5); }
+  .btn-primary:disabled{ opacity:.4; cursor:not-allowed; box-shadow:none; }
+
+  #fileInput{ display:none; }
+
+  /* ---------- Layout ---------- */
+  main{
+    display:grid;
+    grid-template-columns: minmax(0,1.15fr) minmax(300px, 0.85fr);
+    gap: 28px;
+    padding: 20px clamp(16px, 4vw, 48px) 60px;
+    align-items: start;
+  }
+  @media (max-width: 880px){
+    main{ grid-template-columns: 1fr; }
+  }
+
+  /* ---------- Stage ---------- */
+  .stage{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap: 16px;
+  }
+
+  .canvas-wrap{
+    position: relative;
+    padding: 6px;
+    border-radius: 26px;
+    background: conic-gradient(from var(--ang,0deg), var(--pink), var(--purple), var(--cyan), var(--yellow), var(--pink));
+    animation: spin 8s linear infinite;
+    max-width: 100%;
+  }
+  @keyframes spin{ to{ --ang: 360deg; } }
+  @property --ang { syntax: '<angle>'; inherits: true; initial-value: 0deg; }
+
+  @media (prefers-reduced-motion: reduce){
+    .canvas-wrap{ animation: none; }
+  }
+
+  .canvas-inner{
+    background: var(--bg);
+    border-radius: 22px;
+    padding: 10px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  #stageCanvas{
+    display:none;
+    max-width: 100%;
+    max-height: 62vh;
+    border-radius: 12px;
+    touch-action: none;
+    cursor: grab;
+  }
+  #stageCanvas.active{ display:block; }
+  #stageCanvas.dragging{ cursor: grabbing; }
+
+  .dropzone{
+    width: min(560px, 80vw);
+    aspect-ratio: 1/1;
+    max-height: 62vh;
+    border: 3px dashed rgba(255,255,255,0.25);
+    border-radius: 20px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap: 14px;
+    padding: 24px;
+    text-align:center;
+    cursor:pointer;
+    transition: border-color .2s ease, background .2s ease;
+  }
+  .dropzone:hover, .dropzone.hover{
+    border-color: var(--cyan);
+    background: rgba(0,229,255,0.06);
+  }
+  .drop-emoji{ font-size: 54px; animation: bounce 2.4s ease-in-out infinite; }
+  @keyframes bounce{ 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(-14px);} }
+  .drop-title{
+    font-family:'Fredoka', sans-serif;
+    font-size: 20px;
+    font-weight:600;
+    background: linear-gradient(90deg, var(--pink), var(--cyan));
+    -webkit-background-clip:text;
+    background-clip:text;
+    color: transparent;
+  }
+  .drop-sub{ color: var(--muted); font-size: 13px; max-width: 320px; }
+
+  .stage-hint{
+    font-size: 12px;
+    color: var(--muted);
+    text-align:center;
+    max-width: 480px;
+  }
+  .stage-hint b{ color: var(--white); }
+
+  /* ---------- Panel ---------- */
+  .panel{
+    background: var(--surface);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: var(--radius);
+    padding: 6px;
+  }
+
+  .tabs{
+    display:flex;
+    gap: 4px;
+    overflow-x:auto;
+    padding: 6px;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar{ display:none; }
+
+  .tab{
+    flex: 0 0 auto;
+    background: transparent;
+    color: var(--muted);
+    padding: 9px 16px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 13.5px;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    transition: background .15s ease, color .15s ease;
+  }
+  .tab.active{ background: var(--surface-2); color: var(--white); }
+  .tab:hover{ color: var(--white); }
+
+  .panel-body{ padding: 16px 14px 18px; min-height: 260px; }
+  .panel-section{ display:none; }
+  .panel-section.active{ display:block; }
+
+  .section-title{
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 4px 0 12px;
+  }
+
+  /* Filters grid */
+  .filter-grid{
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+  @media (max-width: 420px){
+    .filter-grid{ grid-template-columns: repeat(2, 1fr); }
+  }
+  .filter-card{
+    background: var(--surface-2);
+    border: 2px solid transparent;
+    border-radius: 14px;
+    padding: 8px;
+    text-align:center;
+    color: var(--white);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:6px;
+    font-size: 11.5px;
+    font-weight:600;
+    transition: border-color .15s ease, transform .1s ease;
+  }
+  .filter-card:hover{ transform: translateY(-2px); }
+  .filter-card .thumb-wrap{
+    width: 100%;
+    aspect-ratio: 1/1;
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--bg);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position: relative;
+  }
+  .filter-card .thumb-wrap canvas{ width:100%; height:100%; object-fit:cover; display:block; }
+  .filter-card .thumb-wrap .fe{ font-size: 26px; }
+  .filter-card.active{ border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(0,229,255,0.15); }
+  .filter-card.active .thumb-wrap{ box-shadow: inset 0 0 0 2px var(--cyan); }
+
+  /* Stickers grid */
+  .sticker-groups{ display:flex; flex-direction:column; gap:16px; }
+  .sticker-cat-title{ display:flex; align-items:center; gap:6px; }
+  .sticker-grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(38px, 1fr));
+    gap: 6px;
+  }
+  .sticker-btn{
+    background: var(--surface-2);
+    border-radius: 10px;
+    font-size: 20px;
+    padding: 8px 0;
+    transition: transform .1s ease, background .15s ease;
+  }
+  .sticker-btn:hover{ transform: scale(1.15) rotate(-6deg); background: var(--surface); }
+  .sticker-btn:active{ transform: scale(0.92); }
+
+  /* Text tab */
+  .field{ margin-bottom: 14px; }
+  .field label{
+    display:block;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .text-input, select{
+    width:100%;
+    background: var(--surface-2);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: var(--white);
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 14px;
+  }
+  .swatches{ display:flex; gap:8px; flex-wrap:wrap; }
+  .swatch{
+    width: 28px; height:28px; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.15);
+    cursor:pointer;
+  }
+  .swatch.selected{ border-color: var(--white); box-shadow: 0 0 0 2px var(--cyan); }
+
+  /* Frames */
+  .frame-grid{ display:grid; grid-template-columns: repeat(3,1fr); gap:8px; }
+  @media (max-width: 420px){
+    .frame-grid{ grid-template-columns: repeat(2,1fr); }
+  }
+  .frame-card{
+    background: var(--surface-2);
+    border: 2px solid transparent;
+    border-radius: 14px;
+    padding: 12px 6px;
+    text-align:center;
+    font-size: 11px;
+    font-weight:600;
+    display:flex; flex-direction:column; align-items:center; gap:5px;
+  }
+  .frame-card .fe{ font-size: 19px; }
+  .frame-card.active{ border-color: var(--pink); box-shadow: 0 0 0 3px rgba(255,46,147,0.15); }
+
+  .frame-caption-field{ margin-top: 14px; }
+
+  /* Selection controls */
+  .sel-box{
+    margin-top: 6px;
+    background: var(--surface-2);
+    border-radius: 14px;
+    padding: 14px;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .sel-box .sel-title{
+    font-size: 12px; font-weight:700; margin-bottom:10px;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .sel-empty{ color: var(--muted); font-size: 13px; padding: 18px 4px; text-align:center; }
+  .sel-hint{ color: var(--muted); font-size: 12px; line-height:1.5; margin-bottom: 4px; }
+  .sel-hint b{ color: var(--white); }
+  input[type=range]{ width:100%; accent-color: var(--pink); }
+  .row-btns{ display:flex; gap:8px; margin-top: 10px; }
+  .row-btns .btn{ flex:1; font-size:12.5px; padding: 9px 8px; }
+  .btn-danger{ background: rgba(255,46,147,0.15); color: var(--pink); }
+  .btn-danger:hover{ background: rgba(255,46,147,0.25); }
+
+  .toast{
+    position: fixed;
+    bottom: 26px; left:50%; transform: translateX(-50%) translateY(20px);
+    background: var(--surface-2);
+    border: 1px solid rgba(255,255,255,0.15);
+    padding: 12px 22px;
+    border-radius: 999px;
+    font-weight:600;
+    font-size: 14px;
+    opacity:0;
+    pointer-events:none;
+    transition: opacity .25s ease, transform .25s ease;
+    z-index: 50;
+  }
+  .toast.show{ opacity:1; transform: translateX(-50%) translateY(0); }
+
+  #confettiCanvas{
+    position: fixed; inset:0; pointer-events:none; z-index: 40;
+  }
+
+  footer{
+    text-align:center;
+    color: var(--muted);
+    font-size: 12px;
+    padding: 10px 20px 30px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand-block">
+    <div class="logo">
+      <span class="c1">c</span><span class="c2">o</span><span class="c3">l</span><span class="c4">o</span><span class="c1">r</span><span class="sp"></span><span class="c2">p</span><span class="c3">h</span><span class="c4">o</span><span class="c1">t</span><span class="c2">o</span>
+    </div>
+    <div class="tagline">studio photo fun & coloré</div>
+  </div>
+  <div class="head-actions">
+    <button class="btn btn-ghost" id="changePhotoBtn" style="display:none;">🔄 Changer de photo</button>
+    <button class="btn btn-primary" id="exportBtn" disabled>📥 Télécharger</button>
+  </div>
+</header>
+
+<main>
+  <section class="stage">
+    <div id="dropzone" class="dropzone">
+      <div class="drop-emoji">📸</div>
+      <div class="drop-title">Glisse ta photo ici</div>
+      <div class="drop-sub">…ou clique pour la choisir. JPG, PNG — elle reste sur ton appareil, rien n'est envoyé nulle part.</div>
+    </div>
+
+    <div class="canvas-wrap" id="canvasWrap" style="display:none;">
+      <div class="canvas-inner">
+        <canvas id="stageCanvas"></canvas>
+      </div>
+    </div>
+
+    <input type="file" id="fileInput" accept="image/*">
+    <div class="stage-hint" id="stageHint" style="display:none;">
+      Astuce : clique sur un élément pour le sélectionner, puis glisse-le pour le <b>déplacer</b>. Utilise la poignée <b>↻</b> pour pivoter et la poignée <b>⤡</b> pour redimensionner.
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="tabs">
+      <button class="tab active" data-tab="filters">🎨 Filtres</button>
+      <button class="tab" data-tab="stickers">✨ Autocollants</button>
+      <button class="tab" data-tab="text">🔤 Texte</button>
+      <button class="tab" data-tab="frames">🖼️ Cadres</button>
+    </div>
+
+    <div class="panel-body">
+
+      <div class="panel-section active" id="tab-filters">
+        <div class="section-title">Choisis une ambiance</div>
+        <div class="filter-grid" id="filterGrid"></div>
+      </div>
+
+      <div class="panel-section" id="tab-stickers">
+        <div class="section-title">Clique pour ajouter</div>
+        <div class="sticker-groups" id="stickerGroups"></div>
+      </div>
+
+      <div class="panel-section" id="tab-text">
+        <div class="section-title">Ajoute du texte</div>
+        <div class="field">
+          <label>Ton texte</label>
+          <input type="text" id="textInput" class="text-input" placeholder="ex : team vacances 🏖️" maxlength="40">
+        </div>
+        <div class="field">
+          <label>Police</label>
+          <select id="fontSelect">
+            <option value="'Bungee', sans-serif">Bungee — punchy</option>
+            <option value="'Fredoka', sans-serif" selected>Fredoka — rond & doux</option>
+            <option value="'Space Grotesk', sans-serif">Space Grotesk — clean</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Couleur</label>
+          <div class="swatches" id="colorSwatches"></div>
+        </div>
+        <button class="btn btn-primary" id="addTextBtn" style="width:100%;">+ Ajouter ce texte</button>
+      </div>
+
+      <div class="panel-section" id="tab-frames">
+        <div class="section-title">Habille ta photo</div>
+        <div class="frame-grid" id="frameGrid"></div>
+        <div class="field frame-caption-field" id="frameCaptionField" style="display:none;">
+          <label id="frameCaptionLabel">Légende</label>
+          <input type="text" id="frameCaptionInput" class="text-input" maxlength="24">
+        </div>
+      </div>
+
+    </div>
+  </section>
+</main>
+
+<footer>Fait avec 💜 pour transformer une photo en quelque chose à toi.</footer>
+
+<div class="toast" id="toast"></div>
+<canvas id="confettiCanvas"></canvas>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------------- State ----------------
+  const state = {
+    img: null,
+    filter: 'none',
+    frame: 'none',
+    frameCaption: '',
+    frameDecoPos: {dx:0, dy:0},
+    objects: [], // {type:'sticker'|'text', x,y,size,rotation, emoji?, text?, font?, color?}
+    selected: -1,
+    mode: null, // null | 'drag' | 'rotate' | 'resize'
+    dragOffset: {x:0,y:0},
+    resizeStart: {size:0, dist:1},
+    frameDragStart: {dx:0, dy:0, px:0, py:0}
+  };
+
+  const FILTERS = [
+    {id:'none', name:'Original', emoji:'🖼️', css:'none'},
+    {id:'neon', name:'Néon Pop', emoji:'✨', css:'saturate(1.9) contrast(1.2) brightness(1.05)'},
+    {id:'vapor', name:'Vaporwave', emoji:'🌸', css:'hue-rotate(270deg) saturate(1.7) contrast(1.1)'},
+    {id:'noir', name:'Noir Stylé', emoji:'🕶️', css:'grayscale(1) contrast(1.4) brightness(0.95)'},
+    {id:'gold', name:'Golden Hour', emoji:'🌇', css:'sepia(0.4) saturate(1.5) brightness(1.1) contrast(1.05)'},
+    {id:'ice', name:'Glacé', emoji:'❄️', css:'hue-rotate(180deg) saturate(1.3) brightness(1.1)'},
+    {id:'y2k', name:'Y2K Vintage', emoji:'📼', css:'sepia(0.3) contrast(0.9) brightness(0.92) saturate(1.2)'},
+    {id:'flash', name:'Flash Pop', emoji:'⚡', css:'brightness(1.25) contrast(1.35) saturate(1.6)'},
+    {id:'dream', name:'Rêve Pastel', emoji:'🩰', css:'saturate(0.75) brightness(1.15) contrast(0.92) hue-rotate(-10deg)'},
+    {id:'toxic', name:'Toxic Green', emoji:'☣️', css:'hue-rotate(70deg) saturate(2) contrast(1.2) brightness(0.95)'},
+    {id:'sunset', name:'Coucher de Soleil', emoji:'🌅', css:'sepia(0.2) hue-rotate(-15deg) saturate(1.6) brightness(1.05) contrast(1.1)'},
+    {id:'midnight', name:'Minuit', emoji:'🌌', css:'brightness(0.8) contrast(1.3) saturate(1.4) hue-rotate(210deg)'},
+    {id:'bubblegum', name:'Bubblegum', emoji:'🍬', css:'hue-rotate(300deg) saturate(1.8) brightness(1.1) contrast(1.05)'},
+    {id:'infrared', name:'Infrarouge', emoji:'🔴', css:'hue-rotate(140deg) saturate(2.2) contrast(1.15)'}
+  ];
+
+  const STICKER_GROUPS = [
+    {label:'Fun', emoji:'😂', items:['😂','🔥','💯','👑','😎','🤙','🥳','🚀','🤪','😆']},
+    {label:'Mood', emoji:'👀', items:['👀','😭','🙏','💅','😴','🥹','😜','🤡','🫠','😤']},
+    {label:'Amour', emoji:'💘', items:['❤️','💖','💘','💞','😘','🌹','💌','💋','💗','😍']},
+    {label:'Nature', emoji:'🌈', items:['🌈','🌸','🌵','🌊','🌙','⭐','✨','☁️','🍀','🌻']},
+    {label:'Fête', emoji:'🎉', items:['🎉','🎂','🎈','🎁','🍾','🎊','🪩','🎶','🥂','🎇']},
+    {label:'Rétro', emoji:'📼', items:['📼','📻','🕹️','💿','📸','🌀','🛼','📺','☎️','💾']},
+    {label:'Symboles', emoji:'⚡', items:['⚡','💫','💎','🔮','👁️','🦋','🍒','🧿','💥','🖤']}
+  ];
+
+  const FRAMES = [
+    {id:'none', name:'Aucun', emoji:'▫️'},
+    {id:'polaroid', name:'Polaroid', emoji:'🩶'},
+    {id:'neon', name:'Néon Glow', emoji:'🟣'},
+    {id:'rounded', name:'Arrondi', emoji:'⬭'},
+    {id:'retro', name:'Rétro Y2K', emoji:'📻'},
+    {id:'geo', name:'Géofiltre', emoji:'📍', caption:'Lieu / légende', placeholder:'paris, france'},
+    {id:'stamp', name:'Horodatage', emoji:'🕒'},
+    {id:'weather', name:'Météo', emoji:'🌤️', caption:'Température', placeholder:'24°C'},
+    {id:'speed', name:'Vitesse', emoji:'💨', caption:'Vitesse', placeholder:'42'}
+  ];
+
+  const TEXT_COLORS = ['#FFFFFF','#FF2E93','#7B2FF7','#00E5FF','#FFE93A','#14101F'];
+
+  const BASE_MAX = 700; // max dimension for the photo itself, before frame padding
+
+  // ---------------- DOM refs ----------------
+  const canvas = document.getElementById('stageCanvas');
+  const ctx = canvas.getContext('2d');
+  const dropzone = document.getElementById('dropzone');
+  const canvasWrap = document.getElementById('canvasWrap');
+  const fileInput = document.getElementById('fileInput');
+  const exportBtn = document.getElementById('exportBtn');
+  const changePhotoBtn = document.getElementById('changePhotoBtn');
+  const stageHint = document.getElementById('stageHint');
+  const toast = document.getElementById('toast');
+
+  // ---------------- Build static UI ----------------
+  function buildFilterGrid(){
+    const grid = document.getElementById('filterGrid');
+    grid.innerHTML = '';
+    FILTERS.forEach(f=>{
+      const btn = document.createElement('button');
+      btn.className = 'filter-card' + (f.id===state.filter?' active':'');
+      btn.dataset.id = f.id;
+      btn.innerHTML = `<div class="thumb-wrap"><span class="fe">${f.emoji}</span></div><span>${f.name}</span>`;
+      btn.addEventListener('click', ()=>{
+        state.filter = f.id;
+        document.querySelectorAll('.filter-card').forEach(c=>c.classList.remove('active'));
+        btn.classList.add('active');
+        render();
+      });
+      grid.appendChild(btn);
+    });
+  }
+
+  // Renders a small live preview of the current photo under each filter option
+  function generateFilterThumbnails(){
+    if(!state.img) return;
+    const size = 120;
+    const off = document.createElement('canvas');
+    off.width = size; off.height = size;
+    const octx = off.getContext('2d');
+    // cover-fit crop of the source image into a square
+    const iw = state.img.naturalWidth, ih = state.img.naturalHeight;
+    const s = Math.max(size/iw, size/ih);
+    const dw = iw*s, dh = ih*s;
+    const dx = (size-dw)/2, dy = (size-dh)/2;
+
+    document.querySelectorAll('.filter-card').forEach(card=>{
+      const f = FILTERS.find(x=>x.id===card.dataset.id);
+      if(!f) return;
+      const wrap = card.querySelector('.thumb-wrap');
+      wrap.innerHTML = '';
+      const c = document.createElement('canvas');
+      c.width = size; c.height = size;
+      const cctx2 = c.getContext('2d');
+      cctx2.filter = f.css;
+      cctx2.drawImage(state.img, dx, dy, dw, dh);
+      wrap.appendChild(c);
+    });
+  }
+
+  function buildStickerGroups(){
+    const wrap = document.getElementById('stickerGroups');
+    wrap.innerHTML = '';
+    STICKER_GROUPS.forEach(group=>{
+      const box = document.createElement('div');
+      const title = document.createElement('div');
+      title.className = 'section-title sticker-cat-title';
+      title.style.marginBottom = '8px';
+      title.innerHTML = `<span>${group.emoji}</span><span>${group.label}</span>`;
+      const gridEl = document.createElement('div');
+      gridEl.className = 'sticker-grid';
+      group.items.forEach(emoji=>{
+        const b = document.createElement('button');
+        b.className = 'sticker-btn';
+        b.textContent = emoji;
+        b.addEventListener('click', ()=>{
+          if(!state.img){ pulseDropzone(); return; }
+          addObject({type:'sticker', emoji, x:0.5, y:0.5, size:0.14, rotation:(Math.random()*16-8)});
+        });
+        gridEl.appendChild(b);
+      });
+      box.appendChild(title);
+      box.appendChild(gridEl);
+      wrap.appendChild(box);
+    });
+  }
+
+  function buildFrameGrid(){
+    const grid = document.getElementById('frameGrid');
+    grid.innerHTML = '';
+    FRAMES.forEach(f=>{
+      const btn = document.createElement('button');
+      btn.className = 'frame-card' + (f.id===state.frame?' active':'');
+      btn.innerHTML = `<span class="fe">${f.emoji}</span><span>${f.name}</span>`;
+      btn.addEventListener('click', ()=>{
+        state.frame = f.id;
+        state.frameDecoPos = {dx:0, dy:0};
+        document.querySelectorAll('.frame-card').forEach(c=>c.classList.remove('active'));
+        btn.classList.add('active');
+        updateFrameCaptionField(f);
+        resizeCanvasForFrame();
+        render();
+      });
+      grid.appendChild(btn);
+    });
+  }
+
+  function updateFrameCaptionField(f){
+    const field = document.getElementById('frameCaptionField');
+    const label = document.getElementById('frameCaptionLabel');
+    const input = document.getElementById('frameCaptionInput');
+    if(f.caption){
+      field.style.display = 'block';
+      label.textContent = f.caption;
+      input.placeholder = f.placeholder || '';
+    } else {
+      field.style.display = 'none';
+    }
+  }
+
+  document.getElementById('frameCaptionInput').addEventListener('input', e=>{
+    state.frameCaption = e.target.value;
+    render();
+  });
+
+  function buildColorSwatches(){
+    const wrap = document.getElementById('colorSwatches');
+    wrap.innerHTML = '';
+    let selected = TEXT_COLORS[0];
+    TEXT_COLORS.forEach((c,i)=>{
+      const s = document.createElement('div');
+      s.className = 'swatch' + (i===0?' selected':'');
+      s.style.background = c;
+      s.dataset.color = c;
+      s.addEventListener('click', ()=>{
+        document.querySelectorAll('.swatch').forEach(x=>x.classList.remove('selected'));
+        s.classList.add('selected');
+        selected = c;
+      });
+      wrap.appendChild(s);
+    });
+    wrap.getSelected = ()=> selected;
+    window.__getTextColor = ()=> selected;
+  }
+
+  buildFilterGrid();
+  buildStickerGroups();
+  buildFrameGrid();
+  buildColorSwatches();
+
+  // ---------------- Tabs ----------------
+  document.querySelectorAll('.tab').forEach(tab=>{
+    tab.addEventListener('click', ()=>{
+      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+      document.querySelectorAll('.panel-section').forEach(s=>s.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('tab-'+tab.dataset.tab).classList.add('active');
+    });
+  });
+
+  // ---------------- Image loading ----------------
+  dropzone.addEventListener('click', ()=> fileInput.click());
+  changePhotoBtn.addEventListener('click', ()=> fileInput.click());
+
+  ['dragover','dragenter'].forEach(evt=>{
+    dropzone.addEventListener(evt, e=>{ e.preventDefault(); dropzone.classList.add('hover'); });
+  });
+  ['dragleave','drop'].forEach(evt=>{
+    dropzone.addEventListener(evt, e=>{ e.preventDefault(); dropzone.classList.remove('hover'); });
+  });
+  dropzone.addEventListener('drop', e=>{
+    const file = e.dataTransfer.files[0];
+    if(file) loadFile(file);
+  });
+
+  fileInput.addEventListener('change', e=>{
+    const file = e.target.files[0];
+    if(file) loadFile(file);
+  });
+
+  function loadFile(file){
+    if(!file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = ev=>{
+      const img = new Image();
+      img.onload = ()=>{
+        state.img = img;
+        state.objects = [];
+        state.selected = -1;
+        state.frameDecoPos = {dx:0, dy:0};
+        dropzone.style.display = 'none';
+        canvasWrap.style.display = 'block';
+        canvas.classList.add('active');
+        changePhotoBtn.style.display = 'inline-block';
+        exportBtn.disabled = false;
+        stageHint.style.display = 'block';
+        resizeCanvasForFrame();
+        render();
+        generateFilterThumbnails();
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function pulseDropzone(){
+    dropzone.style.borderColor = 'var(--pink)';
+    setTimeout(()=> dropzone.style.borderColor = '', 400);
+  }
+
+  // ---------------- Frame padding ----------------
+  function getFramePadding(){
+    switch(state.frame){
+      case 'polaroid': return {top:0.045, side:0.045, bottom:0.16};
+      case 'neon': return {top:0.05, side:0.05, bottom:0.05};
+      case 'rounded': return {top:0.03, side:0.03, bottom:0.03};
+      case 'retro': return {top:0.05, side:0.05, bottom:0.05};
+      case 'geo': case 'stamp': case 'weather': case 'speed': return {top:0, side:0, bottom:0};
+      default: return {top:0, side:0, bottom:0};
+    }
+  }
+
+  let imgDisplayW=0, imgDisplayH=0, padLeft=0, padTop=0;
+
+  function resizeCanvasForFrame(){
+    if(!state.img) return;
+    const scale = Math.min(BASE_MAX/state.img.naturalWidth, BASE_MAX/state.img.naturalHeight, 2);
+    imgDisplayW = state.img.naturalWidth*scale;
+    imgDisplayH = state.img.naturalHeight*scale;
+    const pad = getFramePadding();
+    padLeft = imgDisplayW*pad.side;
+    padTop = imgDisplayH*pad.top;
+    const padRight = imgDisplayW*pad.side;
+    const padBottom = imgDisplayH*pad.bottom;
+    canvas.width = Math.round(imgDisplayW + padLeft + padRight);
+    canvas.height = Math.round(imgDisplayH + padTop + padBottom);
+  }
+
+  // ---------------- Object helpers ----------------
+  function addObject(obj){
+    state.objects.push(obj);
+    state.selected = state.objects.length-1;
+    render();
+    renderSelection();
+  }
+
+  function roundRectPath(c, x,y,w,h,r){
+    c.beginPath();
+    c.moveTo(x+r,y);
+    c.arcTo(x+w,y,x+w,y+h,r);
+    c.arcTo(x+w,y+h,x,y+h,r);
+    c.arcTo(x,y+h,x,y,r);
+    c.arcTo(x,y,x+w,y,r);
+    c.closePath();
+  }
+
+  // ---------------- Render ----------------
+  function render(){
+    if(!state.img) return;
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0,0,W,H);
+    ctx.save();
+
+    if(state.frame==='rounded'){
+      roundRectPath(ctx, 0,0,W,H,28);
+      ctx.clip();
+    }
+
+    // background fill
+    ctx.fillStyle = state.frame==='retro' ? '#FFF3D6' : '#FFFFFF';
+    ctx.fillRect(0,0,W,H);
+
+    // draw the photo
+    const filterObj = FILTERS.find(f=>f.id===state.filter) || FILTERS[0];
+    ctx.save();
+    if(state.frame==='rounded'){
+      roundRectPath(ctx, padLeft, padTop, imgDisplayW, imgDisplayH, 16);
+      ctx.clip();
+    }
+    ctx.filter = filterObj.css;
+    ctx.drawImage(state.img, padLeft, padTop, imgDisplayW, imgDisplayH);
+    ctx.filter = 'none';
+    ctx.restore();
+
+    // overlays
+    state.objects.forEach((obj, i)=>{
+      drawObject(obj);
+    });
+
+    ctx.restore(); // remove outer clip
+
+    // frame decorations drawn after clip is released
+    drawFrameDecoration();
+
+    // selection box
+    if(state.selected>=0 && state.objects[state.selected]){
+      drawSelectionBox(state.objects[state.selected]);
+    }
+  }
+
+  function drawObject(obj){
+    const W = canvas.width;
+    const x = obj.x*canvas.width;
+    const y = obj.y*canvas.height;
+    const size = obj.size*W;
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.rotate(obj.rotation*Math.PI/180);
+    if(obj.type==='sticker'){
+      ctx.font = `${size}px "Segoe UI Emoji", sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(obj.emoji, 0, 0);
+    } else if(obj.type==='text'){
+      ctx.font = `600 ${size}px ${obj.font}`;
+      ctx.fillStyle = obj.color;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.shadowColor = 'rgba(0,0,0,0.35)';
+      ctx.shadowBlur = 6;
+      ctx.fillText(obj.text, 0, 0);
+    }
+    ctx.restore();
+  }
+
+  function getObjectBounds(obj){
+    const x = obj.x*canvas.width;
+    const y = obj.y*canvas.height;
+    const size = obj.size*canvas.width;
+    let w,h;
+    if(obj.type==='sticker'){
+      w = size*1.15; h = size*1.15;
+    } else {
+      ctx.save();
+      ctx.font = `600 ${size}px ${obj.font}`;
+      w = ctx.measureText(obj.text).width + size*0.3;
+      h = size*1.3;
+      ctx.restore();
+    }
+    return {x: x-w/2, y: y-h/2, w, h, cx:x, cy:y};
+  }
+
+  const HANDLE_R = 15; // hit radius for handles, in canvas px
+  const ROTATE_OFFSET = 46; // distance of rotate handle above the box, in canvas px
+
+  function getHandlePositions(obj, b){
+    const rad = obj.rotation*Math.PI/180;
+    const cos = Math.cos(rad), sin = Math.sin(rad);
+    const halfW = b.w/2, halfH = b.h/2;
+    function toAbs(rx,ry){
+      return { x: b.cx + (rx*cos - ry*sin), y: b.cy + (rx*sin + ry*cos) };
+    }
+    return {
+      rotate: toAbs(0, -halfH - ROTATE_OFFSET),
+      resize: toAbs(halfW, halfH),
+      topMid: toAbs(0, -halfH)
+    };
+  }
+
+  function drawSelectionBox(obj){
+    const b = getObjectBounds(obj);
+    const rad = obj.rotation*Math.PI/180;
+    const handles = getHandlePositions(obj, b);
+
+    ctx.save();
+    // rotated dashed box
+    ctx.translate(b.cx, b.cy);
+    ctx.rotate(rad);
+    ctx.strokeStyle = '#00E5FF';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6,5]);
+    ctx.strokeRect(-b.w/2, -b.h/2, b.w, b.h);
+    ctx.restore();
+
+    // line to rotate handle
+    ctx.save();
+    ctx.strokeStyle = '#00E5FF';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4,4]);
+    ctx.beginPath();
+    ctx.moveTo(handles.topMid.x, handles.topMid.y);
+    ctx.lineTo(handles.rotate.x, handles.rotate.y);
+    ctx.stroke();
+    ctx.restore();
+
+    // rotate handle (circle + rotate arrow glyph)
+    drawHandle(handles.rotate.x, handles.rotate.y, '#00E5FF', '↻', obj.rotation);
+    // resize handle (circle + diagonal arrow glyph)
+    drawHandle(handles.resize.x, handles.resize.y, '#FF2E93', '⤡', obj.rotation);
+  }
+
+  function drawHandle(x, y, color, glyph, rotationDeg){
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.beginPath();
+    ctx.arc(0,0,HANDLE_R,0,Math.PI*2);
+    ctx.fillStyle = '#1F1830';
+    ctx.fill();
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = color;
+    ctx.stroke();
+    ctx.rotate(rotationDeg*Math.PI/180);
+    ctx.fillStyle = color;
+    ctx.font = '16px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(glyph, 0, 1);
+    ctx.restore();
+  }
+
+  function isSnapFrame(f){ return f==='geo' || f==='stamp' || f==='weather' || f==='speed'; }
+
+  function drawFrameDecoration(){
+    const W = canvas.width, H = canvas.height;
+    const offX = state.frameDecoPos.dx*W;
+    const offY = state.frameDecoPos.dy*H;
+    ctx.save();
+    if(state.frame==='neon'){
+      const grad = ctx.createLinearGradient(0,0,W,H);
+      grad.addColorStop(0,'#FF2E93');
+      grad.addColorStop(0.5,'#00E5FF');
+      grad.addColorStop(1,'#7B2FF7');
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = 10;
+      ctx.shadowColor = '#00E5FF';
+      ctx.shadowBlur = 18;
+      ctx.strokeRect(6,6,W-12,H-12);
+    } else if(state.frame==='rounded'){
+      roundRectPath(ctx, 5,5,W-10,H-10,26);
+      ctx.strokeStyle = '#FF2E93';
+      ctx.lineWidth = 8;
+      ctx.stroke();
+    } else if(state.frame==='retro'){
+      ctx.strokeStyle = '#FFE93A';
+      ctx.lineWidth = 6;
+      ctx.setLineDash([2,10]);
+      ctx.strokeRect(10,10,W-20,H-20);
+      ctx.setLineDash([]);
+      ctx.strokeStyle = '#7B2FF7';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(3,3,W-6,H-6);
+    } else if(state.frame==='polaroid'){
+      ctx.strokeStyle = 'rgba(0,0,0,0.08)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(0.5,0.5,W-1,H-1);
+    } else if(state.frame==='geo'){
+      const bandH = H*0.14;
+      const bandY = H-bandH+offY;
+      const grad = ctx.createLinearGradient(0,bandY,W,bandY+bandH);
+      grad.addColorStop(0,'#FF2E93');
+      grad.addColorStop(0.5,'#7B2FF7');
+      grad.addColorStop(1,'#00E5FF');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, bandY, W, bandH);
+      const caption = (state.frameCaption || 'paris, france');
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = `${Math.round(W*0.06)}px 'Pacifico', cursive`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.shadowColor = 'rgba(0,0,0,0.25)';
+      ctx.shadowBlur = 4;
+      ctx.fillText('📍 '+caption, W/2, bandY+bandH/2);
+    } else if(state.frame==='stamp'){
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('fr-FR', {day:'numeric', month:'short', year:'numeric'});
+      const timeStr = now.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+      const pad = W*0.035;
+      const fs = Math.round(W*0.032);
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'alphabetic';
+      ctx.font = `700 ${fs}px 'Fredoka', sans-serif`;
+      ctx.shadowColor = 'rgba(0,0,0,0.55)';
+      ctx.shadowBlur = 6;
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillText(timeStr, pad+offX, H-pad-fs*0.9+offY);
+      ctx.font = `500 ${Math.round(fs*0.7)}px 'Fredoka', sans-serif`;
+      ctx.fillText(dateStr, pad+offX, H-pad+offY);
+    } else if(state.frame==='weather'){
+      const label = (state.frameCaption || '24°C');
+      const fs = Math.round(W*0.045);
+      ctx.font = `600 ${fs}px 'Fredoka', sans-serif`;
+      const text = '☀️ '+label;
+      const textW = ctx.measureText(text).width;
+      const padX = W*0.03+offX, padY = H*0.03+offY;
+      const pillW = textW + fs*1.2, pillH = fs*1.8;
+      roundRectPath(ctx, padX, padY, pillW, pillH, pillH/2);
+      ctx.fillStyle = 'rgba(255,255,255,0.92)';
+      ctx.shadowColor = 'rgba(0,0,0,0.25)';
+      ctx.shadowBlur = 8;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = '#14101F';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, padX+fs*0.6, padY+pillH/2+fs*0.05);
+    } else if(state.frame==='speed'){
+      const value = (state.frameCaption || '42');
+      const fs = Math.round(W*0.14);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'alphabetic';
+      const baseline = H - H*0.1 + offY;
+      const cx = W/2+offX;
+      ctx.font = `700 ${fs}px 'Bungee', sans-serif`;
+      const numW = ctx.measureText(value).width;
+      const plateW = numW + fs*0.7, plateH = fs*1.35;
+      ctx.fillStyle = 'rgba(20,16,31,0.45)';
+      roundRectPath(ctx, cx-plateW/2, baseline-plateH+fs*0.28, plateW, plateH, 18);
+      ctx.fill();
+      ctx.fillStyle = '#FFFFFF';
+      ctx.shadowColor = 'rgba(0,0,0,0.4)';
+      ctx.shadowBlur = 8;
+      ctx.fillText(value, cx, baseline);
+      ctx.shadowBlur = 0;
+      ctx.font = `600 ${Math.round(fs*0.22)}px 'Space Grotesk', sans-serif`;
+      ctx.fillText('KM/H', cx, baseline+fs*0.28);
+    }
+    ctx.restore();
+
+    if(isSnapFrame(state.frame) && state.mode==='dragFrameDeco'){
+      const b = getFrameDecoBounds();
+      if(b){
+        ctx.save();
+        ctx.strokeStyle = '#FF2E93';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6,5]);
+        ctx.strokeRect(b.x, b.y, b.w, b.h);
+        ctx.restore();
+      }
+    }
+  }
+
+  // Approximate hit-box for the current Snap-style overlay, used for dragging
+  function getFrameDecoBounds(){
+    if(!isSnapFrame(state.frame)) return null;
+    const W = canvas.width, H = canvas.height;
+    const offX = state.frameDecoPos.dx*W;
+    const offY = state.frameDecoPos.dy*H;
+    if(state.frame==='geo'){
+      const bandH = H*0.14;
+      return { x:0, y:H-bandH+offY, w:W, h:bandH };
+    }
+    if(state.frame==='stamp'){
+      const pad = W*0.035, fs = Math.round(W*0.032);
+      const w = W*0.34, h = fs*2.4;
+      return { x: pad+offX-8, y: H-pad-h+offY, w: w, h: h+10 };
+    }
+    if(state.frame==='weather'){
+      const label = state.frameCaption || '24°C';
+      const fs = Math.round(W*0.045);
+      ctx.font = `600 ${fs}px 'Fredoka', sans-serif`;
+      const text = '☀️ '+label;
+      const textW = ctx.measureText(text).width;
+      const padX = W*0.03+offX, padY = H*0.03+offY;
+      const pillW = textW + fs*1.2, pillH = fs*1.8;
+      return { x:padX, y:padY, w:pillW, h:pillH };
+    }
+    if(state.frame==='speed'){
+      const value = state.frameCaption || '42';
+      const fs = Math.round(W*0.14);
+      ctx.font = `700 ${fs}px 'Bungee', sans-serif`;
+      const numW = ctx.measureText(value).width;
+      const plateW = numW + fs*0.7, plateH = fs*1.6;
+      const baseline = H-H*0.1+offY;
+      return { x: W/2-plateW/2+offX, y: baseline-plateH+fs*0.28, w:plateW, h:plateH };
+    }
+    return null;
+  }
+
+  // ---------------- Pointer interaction ----------------
+  function getCanvasPoint(e){
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width/rect.width;
+    const scaleY = canvas.height/rect.height;
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return { x:(clientX-rect.left)*scaleX, y:(clientY-rect.top)*scaleY };
+  }
+
+  function hitTest(pt){
+    for(let i=state.objects.length-1;i>=0;i--){
+      const b = getObjectBounds(state.objects[i]);
+      if(pt.x>=b.x && pt.x<=b.x+b.w && pt.y>=b.y && pt.y<=b.y+b.h){
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  function dist(x1,y1,x2,y2){ return Math.hypot(x2-x1, y2-y1); }
+
+  canvas.addEventListener('pointerdown', e=>{
+    if(!state.img) return;
+    const pt = getCanvasPoint(e);
+
+    // if something is already selected, check handles first
+    if(state.selected>=0 && state.objects[state.selected]){
+      const obj = state.objects[state.selected];
+      const b = getObjectBounds(obj);
+      const handles = getHandlePositions(obj, b);
+
+      if(dist(pt.x,pt.y,handles.rotate.x,handles.rotate.y) <= HANDLE_R+6){
+        state.mode = 'rotate';
+        canvas.classList.add('dragging');
+        return;
+      }
+      if(dist(pt.x,pt.y,handles.resize.x,handles.resize.y) <= HANDLE_R+6){
+        state.mode = 'resize';
+        state.resizeStart = { size: obj.size, dist: Math.max(20, dist(b.cx,b.cy,pt.x,pt.y)) };
+        canvas.classList.add('dragging');
+        return;
+      }
+    }
+
+    const idx = hitTest(pt);
+    if(idx>=0){
+      const obj = state.objects[idx];
+      state.selected = idx;
+      state.mode = 'drag';
+      canvas.classList.add('dragging');
+      state.dragOffset = { x: pt.x - obj.x*canvas.width, y: pt.y - obj.y*canvas.height };
+      render();
+      renderSelection();
+      return;
+    }
+
+    // otherwise, check if the click landed on a draggable Snap-style overlay
+    if(isSnapFrame(state.frame)){
+      const fb = getFrameDecoBounds();
+      if(fb && pt.x>=fb.x && pt.x<=fb.x+fb.w && pt.y>=fb.y && pt.y<=fb.y+fb.h){
+        state.selected = -1;
+        state.mode = 'dragFrameDeco';
+        canvas.classList.add('dragging');
+        state.frameDragStart = { dx: state.frameDecoPos.dx, dy: state.frameDecoPos.dy, px: pt.x, py: pt.y };
+        render();
+        renderSelection();
+        return;
+      }
+    }
+
+    state.selected = -1;
+    state.mode = null;
+    render();
+    renderSelection();
+  });
+
+  window.addEventListener('pointermove', e=>{
+    if(!state.mode) return;
+    const pt = getCanvasPoint(e);
+
+    if(state.mode==='dragFrameDeco'){
+      const dxPx = pt.x - state.frameDragStart.px;
+      const dyPx = pt.y - state.frameDragStart.py;
+      if(state.frame==='geo'){
+        state.frameDecoPos.dy = Math.max(-0.5, Math.min(0.5, state.frameDragStart.dy + dyPx/canvas.height));
+      } else {
+        state.frameDecoPos.dx = Math.max(-0.4, Math.min(0.4, state.frameDragStart.dx + dxPx/canvas.width));
+        state.frameDecoPos.dy = Math.max(-0.4, Math.min(0.4, state.frameDragStart.dy + dyPx/canvas.height));
+      }
+      render();
+      return;
+    }
+
+    if(state.selected<0) return;
+    const obj = state.objects[state.selected];
+    if(!obj) return;
+
+    if(state.mode==='drag'){
+      let nx = (pt.x - state.dragOffset.x)/canvas.width;
+      let ny = (pt.y - state.dragOffset.y)/canvas.height;
+      nx = Math.min(1.02, Math.max(-0.02, nx));
+      ny = Math.min(1.02, Math.max(-0.02, ny));
+      obj.x = nx; obj.y = ny;
+    } else if(state.mode==='rotate'){
+      const cx = obj.x*canvas.width, cy = obj.y*canvas.height;
+      const angle = Math.atan2(pt.y-cy, pt.x-cx) * 180/Math.PI;
+      // handle sits above the object (i.e. at -90deg when rotation is 0)
+      obj.rotation = angle + 90;
+      if(obj.rotation > 180) obj.rotation -= 360;
+      if(obj.rotation < -180) obj.rotation += 360;
+    } else if(state.mode==='resize'){
+      const cx = obj.x*canvas.width, cy = obj.y*canvas.height;
+      const d = Math.max(20, dist(cx,cy,pt.x,pt.y));
+      const ratio = d/state.resizeStart.dist;
+      obj.size = Math.min(0.5, Math.max(0.03, state.resizeStart.size*ratio));
+    }
+    render();
+  });
+
+  window.addEventListener('pointerup', ()=>{
+    state.mode = null;
+    canvas.classList.remove('dragging');
+  });
+
+  document.addEventListener('keydown', e=>{
+    if((e.key==='Delete' || e.key==='Backspace') && state.selected>=0){
+      const active = document.activeElement;
+      if(active && (active.tagName==='INPUT' || active.tagName==='TEXTAREA')) return;
+      e.preventDefault();
+      deleteSelected();
+    }
+  });
+
+  // ---------------- Selection panel ----------------
+  function renderSelection(){
+    let box = document.getElementById('selBox');
+    const panels = ['tab-filters','tab-stickers','tab-text','tab-frames'];
+    // remove existing sel box(es)
+    document.querySelectorAll('.sel-box').forEach(el=>el.remove());
+
+    if(state.selected<0 || !state.objects[state.selected]) return;
+    const obj = state.objects[state.selected];
+    const activePanel = document.querySelector('.panel-section.active');
+    if(!activePanel) return;
+
+    const el = document.createElement('div');
+    el.className = 'sel-box';
+    el.innerHTML = `
+      <div class="sel-title"><span>${obj.type==='sticker' ? 'Autocollant sélectionné '+obj.emoji : 'Texte sélectionné'}</span></div>
+      <div class="sel-hint">↻ <b>bleu</b> = pivoter · ⤡ <b>rose</b> = agrandir/rétrécir. Glisse-les directement sur la photo.</div>
+      <div class="row-btns">
+        <button class="btn btn-ghost" id="selFront">⬆️ Devant</button>
+        <button class="btn btn-danger" id="selDelete">🗑️ Supprimer</button>
+      </div>
+    `;
+    activePanel.appendChild(el);
+
+    document.getElementById('selFront').addEventListener('click', ()=>{
+      state.objects.splice(state.selected,1);
+      state.objects.push(obj);
+      state.selected = state.objects.length-1;
+      render();
+    });
+    document.getElementById('selDelete').addEventListener('click', deleteSelected);
+  }
+
+  function deleteSelected(){
+    if(state.selected<0) return;
+    state.objects.splice(state.selected,1);
+    state.selected = -1;
+    render();
+    renderSelection();
+  }
+
+  document.querySelectorAll('.tab').forEach(t=>{
+    t.addEventListener('click', renderSelection);
+  });
+
+  // ---------------- Add text ----------------
+  document.getElementById('addTextBtn').addEventListener('click', ()=>{
+    if(!state.img){ pulseDropzone(); return; }
+    const input = document.getElementById('textInput');
+    const text = input.value.trim();
+    if(!text) { input.focus(); return; }
+    const font = document.getElementById('fontSelect').value;
+    const color = window.__getTextColor ? window.__getTextColor() : '#FFFFFF';
+    addObject({type:'text', text, font, color, x:0.5, y:0.5, size:0.09, rotation:0});
+    input.value = '';
+  });
+
+  // ---------------- Export ----------------
+  exportBtn.addEventListener('click', ()=>{
+    if(!state.img) return;
+    state.selected = -1;
+    render();
+    const link = document.createElement('a');
+    link.download = 'color-photo.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    showToast('Photo enregistrée ! 🎉');
+    burstConfetti();
+  });
+
+  function showToast(msg){
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(()=> toast.classList.remove('show'), 2200);
+  }
+
+  // ---------------- Confetti ----------------
+  const confettiCanvas = document.getElementById('confettiCanvas');
+  const cctx = confettiCanvas.getContext('2d');
+  function resizeConfetti(){
+    confettiCanvas.width = window.innerWidth;
+    confettiCanvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resizeConfetti);
+  resizeConfetti();
+
+  const CONFETTI_COLORS = ['#FF2E93','#7B2FF7','#00E5FF','#FFE93A','#FFFFFF'];
+
+  function burstConfetti(){
+    const rect = exportBtn.getBoundingClientRect();
+    const originX = rect.left + rect.width/2;
+    const originY = rect.top + rect.height/2;
+    const particles = [];
+    const count = 70;
+    for(let i=0;i<count;i++){
+      const angle = Math.random()*Math.PI*2;
+      const speed = 3 + Math.random()*7;
+      particles.push({
+        x: originX, y: originY,
+        vx: Math.cos(angle)*speed,
+        vy: Math.sin(angle)*speed - 4,
+        size: 4+Math.random()*5,
+        color: CONFETTI_COLORS[Math.floor(Math.random()*CONFETTI_COLORS.length)],
+        rot: Math.random()*360,
+        vr: (Math.random()-0.5)*20,
+        life: 60+Math.random()*30
+      });
+    }
+    let frame = 0;
+    function step(){
+      cctx.clearRect(0,0,confettiCanvas.width, confettiCanvas.height);
+      let alive = false;
+      particles.forEach(p=>{
+        if(p.life<=0) return;
+        alive = true;
+        p.vy += 0.18;
+        p.x += p.vx;
+        p.y += p.vy;
+        p.rot += p.vr;
+        p.life -= 1;
+        cctx.save();
+        cctx.translate(p.x,p.y);
+        cctx.rotate(p.rot*Math.PI/180);
+        cctx.fillStyle = p.color;
+        cctx.globalAlpha = Math.min(1, p.life/20);
+        cctx.fillRect(-p.size/2,-p.size/2,p.size,p.size);
+        cctx.restore();
+      });
+      frame++;
+      if(alive && frame<150){
+        requestAnimationFrame(step);
+      } else {
+        cctx.clearRect(0,0,confettiCanvas.width, confettiCanvas.height);
+      }
+    }
+    step();
+  }
+
+})();
+</script>
+</body>
+</html>
